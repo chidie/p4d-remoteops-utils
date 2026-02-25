@@ -51,5 +51,41 @@ class RemoteHost:
             
     
    
+    @classmethod
+    def create_folder_path_recursively(
+        cls,
+        folder_path: typing.Union[str, pathlib.Path],
+        sftp: "paramiko.sftp_client.SFTPClient",
+        logger: typing.Union[None, logging.Logger]=None
+    ) -> int:
+        path_str = str(folder_path).replace('\\', '/')
+        parts = [p for p in path_str.split('/') if p]
+
+        if logger:
+            logger.info(f"Creating remote folder recursively: {path_str!r}")
+
+        if cls.is_path_a_regular_folder(path_str, sftp, logger, "created_folder_path_recursively"):
+            if logger:
+                logger.debug(f"Target folder already exists: {path_str!r}")
+            return 0
+
+        current_path = "/" if path_str.startswith('/') else ""
+        creation_count = 0
+
+        for part in parts:
+            current_path = f"{current_path.rstrip('/')}/{part}"
+            try:
+                attrs = sftp.lstat(current_path)
+                if not stat.S_ISDIR(attrs.st_mode):
+                    raise OSError(f"Path component exists but is not a folder: {current_path}")
+            except FileNotFoundError:
+                if logger:
+                    logger.info(f"Creating remote folder: {current_path}")
+                sftp.mkdir(current_path)
+                creation_count += 1
+            except OSError:
+                raise
+        return creation_count
+        
 
 

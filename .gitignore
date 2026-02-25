@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+.vscode/
+.settings/
+
+# Keep the directory but ignore contents
+dlls/*
+!dlls/.gitkeep
+
+logs/*
+!logs/.gitkeep
