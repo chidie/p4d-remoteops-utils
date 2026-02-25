@@ -25,19 +25,40 @@ cd p4d-remoteops-utils
 
 > NOTE: Key libraries like Paramiko is for SFTP communication and pythonnet is for loading .DLL file.
 
-## Task 1: 
-- Check whether 'path' points to an existing regular folder on the remote host.
-- Symbolic links, shortcuts, files or non-existent paths return False
->Note: A Windows junction pointing to an existing folder is treated as a folder
+## Task Overview
 
-## Task 2: 
-- Create the folder at 'folder_path' and any missing parent folders on the remote host.
-  * If 'folder_path' already exists and is a folder, nothing happens.
-  * If it exists and is NOT a folder, an exception is raised.
->NOTE: The 'create_folder_path_recursively' method does not delete, modify, or overwrite existing filesystem instances.
+### Task 1: Remote Filesystem Inspection Logic
+**Objective:** Implement a robust mechanism to validate remote filesystem entities via SFTP.
+* Developed `is_path_a_regular_folder` to distinguish between actual directories and "noise" (files, symbolic links, or shortcuts).
+* Utilized `lstat` to prevent the accidental following of symlinks, ensuring the integrity of the "regular folder" requirement.
+* Normalized path separators to ensure functionality across both Linux and Windows remote hosts.
 
+### Task 2: Recursive Remote Directory Management
+**Objective:** Create a fail-safe, recursive folder creation utility.
+* Implemented `create_folder_path_recursively` to build complex path structures level-by-level.
+* Integrated type-checking at every level of the recursion to prevent directory creation if a file with the same name already exists.
+* Designed the method to return an integer count of successfully created folders for audit and testing purposes.
 
-# Errors encountered and solutions:
+### Task 3: 64-bit .NET Assembly Interoperability
+**Objective:** To bridge the gap between Python and managed 64-bit DLL file(`GXW3OpenIF64.dll`).
+* Leveraged `pythonnet` (CLR) to load the Mitsubishi Electric assembly into the Python process.
+* Verified architecture compatibility to ensure 64-bit Python communicates correctly with 64-bit binaries (preventing "Incorrect Format" errors).
+
+### Task 4: Dynamic API Discovery (Reflection)
+**Objective:** To automatically map the available functionality of the Mitsubishi Factory interface.
+* Used Python's reflection capabilities (`dir`, `getattr`, `callable`) to filter out standard .NET boilerplate and isolate unique business logic methods.
+* Implemented a "Deep Inspection" strategy to navigate from the Factory class to the functional `Instance` object where the project-management methods reside.
+
+### Task 5: Managed Security & Trust Configuration
+**Objective:** To resolve .NET security issues.
+* Documented and implemented fixes.
+* Wrapped the entire loading sequence in specific exception handlers to provide actionable feedback for OS-level and Runtime-level failures.
+
+### Task 6: Enterprise-Grade Logging and Structure
+**Objective:** To transition from "scripts" to a maintainable software package.
+* Adopted seperation of concerns technique, added the `src/` layout to separate library logic from execution scripts.
+
+# Errors encountered and fixes:
 >ERROR 1: A .NET security error due to a direct download of the DLL test file from the internet.
 ```bash
     Failed to load DLL: Could not load file or assembly 'file:///C:\Users\chidi\Documents\test-dll-files\GXW3OpenIF64.dll' or one of its dependencies. Operation is not supported. (Exception from HRESULT: 0x80131515)
@@ -54,7 +75,7 @@ Introspection, Boolean suppressSecurityChecks)
 ### Here is the fix:
 - Open the DLL file location, right-click on it and select *properties*
 - At the bottom of the *General* tab, you will find a security warning: *"This file came from another and might be blocked to help protect ..."*
-- Check the *Unblock* checkbox and click *Apply* and *OK*
+fixe- Check the *Unblock* checkbox and click *Apply* and *OK*
 
 >ERROR 2: Architecture Mismatch error - Using a 32-bit DLL file on a 64-bit Python environment. Use GXW3OpenIF32.dll for a 32-bit Python environment and GXW3OpenIF64.dll for a 64-bit Python environment.
 ```
