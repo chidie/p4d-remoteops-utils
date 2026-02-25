@@ -10,25 +10,27 @@ try:
 except ImportError:
     logger.error(f"Error: 'pythonnet' library is required.")
 
-def load_mitsubishi_dll(dll_path: str):
-    """Loads the target 64-bit DLL file and inspect the Managed Factory"""
+
+def inspect_mitsubishi_dll(dll_path: str):
+    """Loads the target 64-bit DLL file and inspect the Managed Factory Methods"""
+    # Verification to ensure file exists
     if not os.path.exists(dll_path):
         raise FileNotFoundError(f"DLL not found at {dll_path}")
     
-    sys.path.append(os.path.dirname(dll_path))
+    sys.path.append(os.path.dirname(dll_path))  # Adds directory to sys.path so dependencies can be resolved
     try:
-        clr.AddReference("GXW3OpenIF64")
+        clr.AddReference(dll_path) # loads the DLL file as a python module using pythonnet
     except Exception as e:
-        print(f"Failed to load DLL: {e}")
+        logger.error(f"Failed to load DLL: {e}")
         return
     
     try: 
-        from MitsubishiElectric.FA.PLC import GXW3OpenIFManagedFactory
+        from MitsubishiElectric.FA.PLC import GXW3OpenIFManagedFactory # misubishi namespace import
 
-        factory = GXW3OpenIFManagedFactory()
-        all_attributes = dir(factory)
-        methods = [attr for attr in all_attributes if not attr.startswith('__') and callable(getattr(factory, attr))]
-
+        # Using .NET reflection to inspect object
+        factory = GXW3OpenIFManagedFactory() # instance of the factory
+        all_attributes = dir(factory) # the dir() returns a list of strings containing attribute, variable, and method name
+        methods = [attr for attr in all_attributes if not attr.startswith('__') and callable(getattr(factory, attr))] # Ignores components that starts with '__' and returns a list of methods that can be called with parenthesis ().
         return sorted(methods)
     except ImportError:
         logger.error(f"Namespace MitsubishiElectric.FA.PLC not found in DLL.")
